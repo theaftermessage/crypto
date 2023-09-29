@@ -1,9 +1,9 @@
 import * as CryptoJS from 'crypto-js';
 
-export function key_generation(){
-  const key = CryptoJS.lib.WordArray.random(32)!.toString();
-  return key;
-}
+// export function key_generation(){
+//   const key = CryptoJS.lib.WordArray.random(32)!.toString();
+//   return key;
+// }
 
 export function shares(n: number, m: number, key: string) {
 

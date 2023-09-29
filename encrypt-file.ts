@@ -1,25 +1,52 @@
-import * as CryptoJS from 'crypto-js';
+export const encryptFile = async (inputFileData: Buffer, key: ArrayBuffer): Promise<ArrayBuffer> => {
+  // Encrypt file
+  const iv = window.crypto.getRandomValues(new Uint8Array(12))
+  const encryptedFileData = await window.crypto.subtle.encrypt(
+    {
+      name: 'AES-GCM',
+      iv: iv,
+    },
+    await window.crypto.subtle.importKey(
+      'raw',
+      key,
+      'AES-GCM',
+      true,
+      ['encrypt', 'decrypt']
+    ),
+    inputFileData
+  )
+  // Convert IV Buffer to ArrayBuffer
+  const ivArrayBuffer = iv.buffer;
 
-export default function encryptFile(inputFileJson: string, key: string) {
-  // parse json string
-  const inputFile = JSON.parse(inputFileJson || "");
+  // Create a new Uint8Array to hold the combined data
+  const combinedData = new Uint8Array(ivArrayBuffer.byteLength + encryptedFileData.byteLength);
 
-  const fileData: string = inputFile!.data || "";
+  // Set IV data
+  combinedData.set(new Uint8Array(ivArrayBuffer), 0);
 
-  const fileExtension: string = inputFile!.metadata || "";
+  // Set data following IV
+  combinedData.set(new Uint8Array(encryptedFileData), ivArrayBuffer.byteLength);
 
-  const encryptionKey = CryptoJS.enc.Hex!.parse(key);
-  const iv = CryptoJS.lib.WordArray!.random(16);
+  // Create an ArrayBuffer from the combined Uint8Array
+  const combinedArrayBuffer = combinedData.buffer;
 
-  const encryptedFileData = CryptoJS.AES.encrypt(fileData!.toString(), encryptionKey, { iv: iv });
-  const encryptedMetadata = CryptoJS.AES.encrypt(fileExtension, encryptionKey, { iv: iv });
+  return combinedArrayBuffer;
+}
 
-  const data = {
-    iv: iv!.toString(),
-    data: encryptedFileData!.toString(),
-    metadata: encryptedMetadata!.toString()
-  };
+export const generateKey = async (): Promise<ArrayBuffer> => {
+  // Generate a random key
+  const key = await window.crypto.subtle.generateKey(
+    {
+      name: 'AES-GCM',
+      length: 256,
+    },
+    true,
+    ['encrypt', 'decrypt']
+  )
 
-  // return data as json string
-  return JSON.stringify(data);
+  // Export key
+  const exportedKey = await window.crypto.subtle.exportKey('raw', key)
+
+  // Return key
+  return exportedKey
 }
